@@ -45,14 +45,13 @@ def color_dict(labelFolder, classNum):
 
 
 def displayComparison(visual_path, predict_path, i):
-    PredictList = os.listdir(predict_path)
     VisualList = os.listdir(visual_path)
-    label1 = cv2.imread(visual_path + "/" + VisualList[i-1])
-    prediction1 = cv2.imread(predict_path + "/" + PredictList[i])
-    result1 = cv2.addWeighted(label1, 0.7, prediction1, 0.3, 10)
-    cv2.namedWindow("Result", 0);
-    cv2.resizeWindow("Result", 900, 600);
-    cv2.imshow("Result", result1)
+    label1 = cv2.imread(visual_path + "/" + VisualList[i - 1])
+    prediction1 = cv2.imread(predict_path + "/" + "/mask_" + str(i) + ".jpg")
+    result = cv2.addWeighted(label1, 0.7, prediction1, 0.3, 10)
+    cv2.namedWindow("Result" + str(i), 0)
+    cv2.resizeWindow("Result" + str(i), 900, 600)
+    cv2.imshow("Result" + str(i), result)
     cv2.waitKey(0)
 
 
@@ -60,14 +59,14 @@ def DisplayComparisons(visual_path, predict_path):
     PredictList = os.listdir(predict_path)
     VisualList = os.listdir(visual_path)
     pic_num = len(PredictList)
-    plt.figure(figsize = (12, 20))
+    plt.figure(figsize=(12, 20))
     plt.title("Comparison")
     for i in range(pic_num):
         label = cv2.imread(visual_path + "/" + VisualList[i])
-        prediction = cv2.imread(predict_path + "/" + PredictList[i])
+        prediction = cv2.imread(predict_path + "/mask_" + str(i + 1) + ".jpg")
         result = cv2.addWeighted(label, 0.7, prediction, 0.3, 10)
 
-        plt.subplot(6, 3, i + 1), plt.imshow(result), plt.title(i)
+        plt.subplot(6, 3, i + 1), plt.imshow(result), plt.title(i + 1)
         plt.xticks([]), plt.yticks([])
     plt.show()
 
@@ -81,7 +80,14 @@ class SegmentationMetric(object):
         # return all class overall pixel accuracy
         #  PA = acc = (TP + TN) / (TP + TN + FP + TN)
         acc = np.diag(self.confusionMatrix).sum() / self.confusionMatrix.sum()
+        test = self.confusionMatrix.sum(axis=0)
         return acc
+
+    def meanPixelAccuracy(self):
+        # CPA = (TP) / TP + FP
+        classAcc = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=1)
+        meanAcc = np.nanmean(classAcc)  # np.nanmean 求平均值，nan表示遇到Nan类型，其值取为0
+        return meanAcc  # 返回单个值，如：np.nanmean([0.90, 0.80, 0.96, nan, nan]) = (0.90 + 0.80 + 0.96） / 3 =  0.89
 
     def IntersectionOverUnion(self):
         # Intersection = TP Union = TP + FP + FN
@@ -114,10 +120,12 @@ class SegmentationMetric(object):
     def F1Score(self):
         # Precision = TP / (TP + FP), Recall = TP / (TP + FN)
         # F1-Score = 2 * Precision * Recall / (Precision + Recall)
-        precision = np.diag(self.confusionMatrix) / np.sum(self.confusionMatrix, axis=1)
-        recall = np.diag(self.confusionMatrix) / np.sum(self.confusionMatrix, axis=0)
+        # precision = self.confusionMatrix[0][0] / (self.confusionMatrix[0][0] + self.confusionMatrix[0][1])
+        # recall = self.confusionMatrix[0][0] / (self.confusionMatrix[0][0] + self.confusionMatrix[1][0])
+        precision = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=1)
+        recall = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=0)
         f1score = 2 * precision * recall / (precision + recall)
-        return f1score
+        return f1score[0]
 
     def genConfusionMatrix(self, imgPredict, imgLabel):
         # 返回混淆矩阵
@@ -136,24 +144,27 @@ class SegmentationMetric(object):
 
 
 if __name__ == '__main__':
-    label_path = './visualization'
-    predict_path = './masks'
+    label_path = './masks'
+    predict_path = './predict'
     visual_path = './visualization'
 
     PA = 0
     MIoU = 0
     F1_Score = 0
+    FWIoU = 0
+    MPA = 0
 
     labelList = os.listdir(label_path)
     PredictList = os.listdir(predict_path)
     VisualList = os.listdir(visual_path)
     pic_num = len(labelList)
 
+    sumMetric = SegmentationMetric(2)
     for i in range(pic_num):
         imgLabel = cv2.imread(label_path + "/" + labelList[i])
-        imgPredict = cv2.imread(predict_path + "/" + PredictList[i])
+        imgPredict = cv2.imread(predict_path + "/mask_" + str(i + 1) + ".jpg")
         imgPredict = np.array(imgPredict)
-        imgLabel = np.array(imgLabel, dtype='uint8')  # 可直接换成标注图片
+        imgLabel = np.array(imgLabel, dtype='uint8')
         # 将数据转为单通道的图片
         imgLabel = cv2.cvtColor(imgLabel, cv2.COLOR_BGR2GRAY)
         imgPredict = cv2.cvtColor(imgPredict, cv2.COLOR_BGR2GRAY)
@@ -163,30 +174,32 @@ if __name__ == '__main__':
         metric = SegmentationMetric(2)  # 2表示有1个分类，有几个分类就填几
         print(imgPredict.shape, imgLabel.shape)
         metric.addBatch(imgPredict, imgLabel)
+        sumMetric.addBatch(imgPredict, imgLabel)
 
         PA = metric.pixelAccuracy()
+        MPA = metric.meanPixelAccuracy()
         MIoU = metric.meanIntersectionOverUnion()
         F1_Score = metric.F1Score()
         FWIoU = metric.Frequency_Weighted_Intersection_over_Union()
-        print(metric.meanIntersectionOverUnion())
+        print('图'+str(i+1))
+        print('像素准确率PA:            %.2f%%' % (PA * 100))
+        print('类别平均像素准确率MPA:     %.2f%%' % (MPA * 100))
+        print('平均交并比MIoU:           %.2f%%' % (MIoU * 100))
+        print('权频交并比FWIoU:          %.2f%%' % (FWIoU * 100))
+        print('F1-score:          %.2f%%' % (F1_Score * 100))
+        print(' ')
 
-
+    PA = sumMetric.pixelAccuracy()
+    MPA = sumMetric.meanPixelAccuracy()
+    MIoU = sumMetric.meanIntersectionOverUnion()
+    F1_Score = sumMetric.F1Score()
+    FWIoU = sumMetric.Frequency_Weighted_Intersection_over_Union()
+    print('该case下总体分割精度为：')
     print('像素准确率PA:            %.2f%%' % (PA * 100))
+    print('类别平均像素准确率MPA:     %.2f%%' % (MPA * 100))
     print('平均交并比MIoU:           %.2f%%' % (MIoU * 100))
     print('权频交并比FWIoU:          %.2f%%' % (FWIoU * 100))
-    # print('F1-score:          %.2f%%' % (F1_Score * 100))
+    print('F1-score:          %.2f%%' % (F1_Score * 100))
+
     DisplayComparisons(visual_path, predict_path)
-    displayComparison(visual_path, predict_path, 1)
-
-
-
-
-
-
-
-
-
-
-
-
-
+    displayComparison(visual_path, predict_path, 2)
