@@ -38,32 +38,6 @@ def apply_mask(pic,mas):
     return 255 - cv2.add(pic, 255-mas)
 
 
-def otsu(gray_img,mask_img):
-    h = gray_img.shape[0]
-    w = gray_img.shape[1]
-    threshold_t = 0
-    max_g = 0
-    # 遍历每一个灰度层
-    gray_img=apply_mask(gray_img,mask_img)
-    for t in range(255):
-        # 使用numpy直接对数组进行计算
-        n0 = gray_img[np.where(gray_img < t) ]
-        n1 = gray_img[np.where(gray_img >= t ) ]
-       # m0 = mask_img[np.where(mask_img ==255)]
-        w0 = len(n0) / (h * w)
-        w1 = len(n1) / (h * w)
-        u0 = np.mean(n0) if len(n0) > 0 else 0
-        u1 = np.mean(n1) if len(n1) > 0 else 0
-
-        g = w0 * w1 * (u0 - u1) ** 2
-        if g > max_g:
-            max_g = g
-            threshold_t = t
-
-    return threshold_t
-
-trs=otsu(gray,mask)
-print(trs)
 
 ret,thresh = cv2.threshold(gray,120,255,cv2.THRESH_BINARY)
 thresh = cv2.GaussianBlur(thresh,(3,3),0)
@@ -87,7 +61,7 @@ draw = cv2.drawContours(img, contours1, -1, (0, 255, 0), 1)  # 描绘连通域
 
 cv2.namedWindow("display",0);
 cv2.resizeWindow("display", 1200, 800);
-cv2.imshow("display",draw)
+cv2.imshow("display",thresh)
 titles = ["origin","gray","thresh and blur","mask","erosion","dilation"]
 images = [img,gray,thresh,visualization,erosion,dilation]
 for i in range(6):
