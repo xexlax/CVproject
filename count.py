@@ -1,7 +1,5 @@
 import os
 import json
-
-import numpy
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt

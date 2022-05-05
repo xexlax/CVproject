@@ -47,7 +47,7 @@ def color_dict(labelFolder, classNum):
 def displayComparison(visual_path, predict_path, i):
     VisualList = os.listdir(visual_path)
     label1 = cv2.imread(visual_path + "/" + VisualList[i - 1])
-    prediction1 = cv2.imread(predict_path + "/" + "/mask_" + str(i) + ".jpg")
+    prediction1 = cv2.imread(predict_path + "/" + str(i-1) + ".png")
     result = cv2.addWeighted(label1, 0.7, prediction1, 0.3, 10)
     cv2.namedWindow("Result" + str(i), 0)
     cv2.resizeWindow("Result" + str(i), 900, 600)
@@ -63,7 +63,7 @@ def DisplayComparisons(visual_path, predict_path):
     plt.title("Comparison")
     for i in range(pic_num):
         label = cv2.imread(visual_path + "/" + VisualList[i])
-        prediction = cv2.imread(predict_path + "/mask_" + str(i + 1) + ".jpg")
+        prediction = cv2.imread(predict_path + "/" + str(i) + ".png")
         result = cv2.addWeighted(label, 0.7, prediction, 0.3, 10)
 
         plt.subplot(6, 3, i + 1), plt.imshow(result), plt.title(i + 1)
@@ -120,12 +120,10 @@ class SegmentationMetric(object):
     def F1Score(self):
         # Precision = TP / (TP + FP), Recall = TP / (TP + FN)
         # F1-Score = 2 * Precision * Recall / (Precision + Recall)
-        # precision = self.confusionMatrix[0][0] / (self.confusionMatrix[0][0] + self.confusionMatrix[0][1])
-        # recall = self.confusionMatrix[0][0] / (self.confusionMatrix[0][0] + self.confusionMatrix[1][0])
         precision = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=1)
         recall = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=0)
         f1score = 2 * precision * recall / (precision + recall)
-        return f1score[0]
+        return np.nanmean(f1score)
 
     def genConfusionMatrix(self, imgPredict, imgLabel):
         # 返回混淆矩阵
@@ -149,7 +147,7 @@ if __name__ == '__main__':
     predict_path = './predict'
     visual_path = './visualization'
 
-    img_path_arr = glob(f'{img_path}/*.jpg')
+    #img_path_arr = glob(f'{img_path}/*.jpg')
 
     PA = 0
     MIoU = 0
@@ -163,12 +161,13 @@ if __name__ == '__main__':
     pic_num = len(labelList)
 
     sumMetric = SegmentationMetric(2)
+    print(img_path)
     for i in range(pic_num):
-        img = cv2.imread(img_path_arr[i])
+        #img = cv2.imread(img_path_arr[i])
         imgLabel = cv2.imread(label_path + "/" + labelList[i])
-        imgPredict = cv2.imread(predict_path + "/mask_" + str(i + 1) + ".jpg")
-        count=countcell(img,imgPredict)
-        print(count)
+        imgPredict = cv2.imread(predict_path + "/" + str(i) + ".png")
+        #count=countcell(img,imgPredict)
+        #print(count)
         imgPredict = np.array(imgPredict)
         imgLabel = np.array(imgLabel, dtype='uint8')
         # 将数据转为单通道的图片
