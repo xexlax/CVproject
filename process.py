@@ -3,7 +3,7 @@ import json
 import numpy as np
 import cv2
 from glob import glob
-
+from  count import  countcell
 case_path = './case1'                       # case
 mask_path = './masks'                       # 掩码生成文件夹
 visualization_path = './visualization'      # 可视化结果文件夹
@@ -40,6 +40,13 @@ for img_path in img_path_arr:
         cv2.polylines(mask, pts, 1, 255)    # 绘制多边形
         cv2.fillPoly(mask, pts, 255)        # 填充
 
+        kernel = np.ones((3, 3), np.uint8)
+        kernel[0][0] = kernel[0][2] = kernel[2][0] = kernel[2][2] = 0
+        # 进行腐蚀膨胀操作
+        mask=cv2.GaussianBlur(mask, (3, 3), 0)
+        erosion = cv2.erode(mask, kernel, iterations=3)
+        mask = cv2.dilate(erosion, kernel, iterations=3)
+
         # 生成可视化结果
         mask_color = np.zeros(img.shape, dtype='uint8')
         mask_color[mask == 255] = (0, 0, 255)
@@ -49,4 +56,5 @@ for img_path in img_path_arr:
         cv2.imwrite(f'{mask_path}/mask_{file_name}', mask)
         cv2.imwrite(
             f'{visualization_path}/visualization_{file_name}', visualization)
+        print(countcell(img,mask))
     print(file_name)

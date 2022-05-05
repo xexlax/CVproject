@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from glob import glob
 import matplotlib.pyplot as plt
-
+from  count import countcell
 
 #  获取颜色字典
 #  classNum 类别总数(含背景)
@@ -144,9 +144,12 @@ class SegmentationMetric(object):
 
 
 if __name__ == '__main__':
+    img_path='./case1'
     label_path = './masks'
     predict_path = './predict'
     visual_path = './visualization'
+
+    img_path_arr = glob(f'{img_path}/*.jpg')
 
     PA = 0
     MIoU = 0
@@ -161,8 +164,11 @@ if __name__ == '__main__':
 
     sumMetric = SegmentationMetric(2)
     for i in range(pic_num):
+        img = cv2.imread(img_path_arr[i])
         imgLabel = cv2.imread(label_path + "/" + labelList[i])
         imgPredict = cv2.imread(predict_path + "/mask_" + str(i + 1) + ".jpg")
+        count=countcell(img,imgPredict)
+        print(count)
         imgPredict = np.array(imgPredict)
         imgLabel = np.array(imgLabel, dtype='uint8')
         # 将数据转为单通道的图片

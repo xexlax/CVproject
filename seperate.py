@@ -41,30 +41,33 @@ def Segmentation(pic_path, pic_name, predict_path, i):
     contours3 = []
     # 筛选出合适的面积并绘制
     for s in contours1:
-        if cv2.contourArea(s) > 4000:
+        if cv2.contourArea(s) > 8000:
             contours3.append(s)
-    draw = cv2.drawContours(img, contours3, -1, (255, 255, 255), -1)
-
-    # 绘制出识别区域并叠加至原始图像
-    mask = np.ones(img.shape[:3], dtype='uint8')
-    mask[:] = (0, 120, 0)
-    draw = cv2.drawContours(mask, contours3, -1, (0, 0, 0), -1)
-    origin = cv2.imread(pic_path + pic_name, 1)
-    final = cv2.add(origin, draw)
-    # final为最终叠加后的图像结果
-    cv2.namedWindow("final", 0);
-    cv2.resizeWindow("final", 1200, 800);
-    cv2.imshow("final", final)
 
     # final_mask为黑白图像
     final_mask = np.ones(img.shape[:2], dtype='uint8') * 255
     final_mask = cv2.drawContours(final_mask, contours3, -1, (0, 0, 0), -1)
-    print("生成分割结果" + str(i+1))
-    cv2.imwrite(f'{predict_path}/mask_{i + 1}.jpg', final_mask)
 
-    cv2.namedWindow("mask", 0);
-    cv2.resizeWindow("mask", 1200, 800);
-    cv2.imshow("mask", final_mask)
+    dilation = cv2.dilate(final_mask, kernel, iterations=11)
+    erosion = cv2.erode(dilation, kernel, iterations=8)
+    final_mask = cv2.dilate(erosion, kernel, iterations=3)
+
+    contours1, hirearchy1 = cv2.findContours(final_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours3 = []
+    # 筛选出合适的面积并绘制
+    for s in contours1:
+        if cv2.contourArea(s) > 8000:
+            contours3.append(s)
+    final_mask = np.ones(img.shape[:2], dtype='uint8') * 0
+    final_mask = cv2.drawContours(final_mask, contours3, -1, (255, 255, 255), -1)
+
+    cv2.imwrite(f'{predict_path}/{i}.png', final_mask)
+    for j in range(5):
+        cv2.imwrite(f'{predict_path}1/{i*5+j}.png', final_mask)
+
+    # cv2.namedWindow("mask", 0);
+    # cv2.resizeWindow("mask", 1200, 800);
+    # cv2.imshow("mask", final_mask)
     cv2.waitKey()
 
 

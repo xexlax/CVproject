@@ -1,4 +1,10 @@
 import vtk
+
+import  os
+
+label_path = './masks1/'
+labelList = os.listdir(label_path)
+pic_num = len(labelList)
 # 定义渲染窗口、交互模式
 aRender = vtk.vtkRenderer()
 Renwin = vtk.vtkRenderWindow()
@@ -12,9 +18,11 @@ PNG_Reader = vtk.vtkPNGReader()
 PNG_Reader.SetNumberOfScalarComponents(1)
 PNG_Reader.SetFileDimensionality(3)  # 说明图像是三维的
  # 定义图像大小，本行表示图像大小为（512*512*240）
-PNG_Reader.SetDataExtent(0, 200, 0,200, 0, 104)
+
+
+PNG_Reader.SetDataExtent(0, 200, 0,200, 0, pic_num-1)
  # 设置图像的存放位置
-PNG_Reader.SetFilePrefix("./masks1/")
+PNG_Reader.SetFilePrefix(label_path)
  # 设置图像前缀名字
  #表示图像前缀为数字（如：0.jpg）
 PNG_Reader.SetFilePattern("%s%d.png")
