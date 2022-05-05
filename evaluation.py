@@ -120,12 +120,10 @@ class SegmentationMetric(object):
     def F1Score(self):
         # Precision = TP / (TP + FP), Recall = TP / (TP + FN)
         # F1-Score = 2 * Precision * Recall / (Precision + Recall)
-        # precision = self.confusionMatrix[0][0] / (self.confusionMatrix[0][0] + self.confusionMatrix[0][1])
-        # recall = self.confusionMatrix[0][0] / (self.confusionMatrix[0][0] + self.confusionMatrix[1][0])
         precision = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=1)
         recall = np.diag(self.confusionMatrix) / self.confusionMatrix.sum(axis=0)
         f1score = 2 * precision * recall / (precision + recall)
-        return f1score[0]
+        return np.nanmean(f1score)
 
     def genConfusionMatrix(self, imgPredict, imgLabel):
         # 返回混淆矩阵
@@ -202,4 +200,4 @@ if __name__ == '__main__':
     print('F1-score:          %.2f%%' % (F1_Score * 100))
 
     DisplayComparisons(visual_path, predict_path)
-    displayComparison(visual_path, predict_path, 2)
+    displayComparison(visual_path, predict_path, 1)
