@@ -62,6 +62,7 @@ def Segmentation(pic_path, pic_name, predict_path, i):
     final_mask = cv2.drawContours(final_mask, contours3, -1, (255, 255, 255), -1)
 
     cv2.imwrite(f'{predict_path}/{i}.png', final_mask)
+    print("生成分割结果" + str(i))
     for j in range(5):
         cv2.imwrite(f'{predict_path}1/{i*5+j}.png', final_mask)
 
